@@ -7,7 +7,7 @@ Created on Fri Mar 29 15:11:26 2019
 import numpy as np
 import types
 
-class LocalVol():
+class PathGen():
     def __init__( self, sample_size:int, N_t:int ):
         self._N = sample_size
         self._N_t = N_t
@@ -35,18 +35,18 @@ class LocalVol():
             self._one_step(i)
         
     def _one_step( self, i:int ):
-        print(self.S0)
+        #print(self.S0)
         dt_term = (self.r-self.q)*self.S_init*self.dt
         dW = np.random.normal(scale=self.dt_sqrt, size=self._N)
-        dW_coeff = self.sigma( i*self.dt, self.S_init )
-        S_hat = self.S0 + dt_term + dW_coeff*self.dt_sqrt
-        self.S_final = self.S0
+        dW_coeff = self.sigma( (i+0.01)*self.dt, self.S_init )*self.S_init
+        S_hat = self.S0 + (dt_term + dW_coeff*self.dt_sqrt)
+        self.S_final = self.S_init
         self.S_final += dt_term + dW_coeff*dW + 0.5*( S_hat-self.S0 )*(dW*dW/self.dt_sqrt - self.dt_sqrt)
         self.S0 = self.S_final
     
     
 if __name__ == "__main__":
-    localvol = LocalVol( 3, 10 )
+    localvol = PathGen( 3, 10 )
     localvol.params_input( S0=10., T=1., r=0.03, q=0.01, sigma=lambda x, y: 0.5*x+0.01*y )
     localvol.evolve()
     print( localvol.S_final )
