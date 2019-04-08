@@ -63,6 +63,19 @@ def BS_price( S, K, T, r, sigma ):
     d2 = d1 - sigma*np.sqrt(T)
     return S*norm.cdf(d1) - K*np.exp(-r*T)*norm.cdf(d2)
 
+def BS_vega(S, K, T, r, sigma):
+    d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))    
+    vega = S * norm.cdf(d1) * np.sqrt(T)
+    return vega
+
+def BS_call_implied_vol(S, K, T, r, C, sigma_init=0.15, tol = 0.00001):
+    res = sigma_init
+    price = BS_price( S, K, T, r, res )
+        
+    while abs(price - C) > tol:
+        res -= (price-C)/BS_vega(S,K,T,r,res)
+        price = BS_price( S, K, T, r, res )
+    return res
 
 def BS_theta( S, K, T, r, sigma ):
     eps=128.
@@ -117,20 +130,49 @@ if __name__ == "__main__":
     K = 11.
     T = 1.
     N_T = 1000
-    N = 100000
+    N =50000
     
     
-#    localvol = PathGen( N, N_T)
-#    localvol.params_input( S0=S0, T=T, r=interest, q=0.00, 
-#                          sigma=partial( local_vol, call_price=C_surface, S=S0, r=interest ) )
-#    localvol.evolve()
-#    ST = localvol.S_final.copy()
-#    payoff = np.where( ST>K, ST-K, 0 )
-#    print( np.mean(payoff)*np.exp(-interest*T), C_surface( K=K, T=T, S=S0, r=interest ) )
-#    
-#    
-#    
-#    
+    def forward_vol( T1, S1, Ks, T ):
+        localvol = PathGen( N, N_T)
+        def forward_local_vol( t, S ):
+            return local_vol( T=t+T1, K=S, call_price=C_surface, S=S1, r=interest  )
+            
+        localvol.params_input( S0=S1, T=T-T1, r=interest, q=0.00, 
+                              sigma=forward_local_vol )
+        localvol.evolve()
+        ST = localvol.S_final.copy()
+        res = []
+        for k in Ks:
+            payoff = np.where( ST>k, ST-k, 0 )
+            c = np.mean(payoff)*np.exp(-interest*T)
+            #print( c, C_surface( K=k, T=T, S=S1, r=interest ) )
+            res.append(c)
+        return res
+    
+    
+    import pandas as pd
+
+    for S1 in [8,9,10,11,12]:    
+        df = pd.DataFrame()
+        Ks = np.linspace(0.8, 1.2, 101)*S1
+        df['Ks'] = Ks
+        for i in range(7):
+            T1 = 0.1*i
+            Tf = T1+1.
+            calls = forward_vol( T1, S1, Ks, T=Tf-T1 )
+            implied_vols = [BS_call_implied_vol(S=S1, K=k, T=Tf-T1, r=interest, C=c) for k, c in zip(Ks, calls) ]
+            df['T1='+str(T1)] = implied_vols.copy()
+            print(T1, ' finishes')
+    #        dir_imp_vols = [vol(Tf, k/S1 ) for k in Ks]
+    #        print( implied_vols )
+    #        print( np.array(dir_imp_vols) - np.array(implied_vols) )
+        df.to_csv('forward vol_'+'S1='+str(S1)+'.csv',  index=False)
+            
+    
+    
+    
+    
 #    constvol = PathGen( N, N_T)
 #    constvol.params_input( S0=S0, T=T, r=interest, q=0.00, 
 #                          sigma=lambda x,y: ATM_VOL )
