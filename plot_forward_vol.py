@@ -15,7 +15,6 @@ if __name__ == "__main__":
     S1 = 8.
     df = pd.read_csv( "forward volS1="+str(S1)+".csv" )
     
-    
     x_name = "Ks"
     Ks = df[x_name]
     Tf = 1.

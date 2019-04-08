@@ -129,8 +129,8 @@ if __name__ == "__main__":
     S0 = 10.
     K = 11.
     T = 1.
-    N_T = 1000
-    N =50000
+    N_T = 5000
+    N =160000
     
     
     def forward_vol( T1, S1, Ks, T ):
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     
     import pandas as pd
 
-    for S1 in [8,9,10,11,12]:    
+    for S1 in [8.,9.,10.,11.,12.]:    
         df = pd.DataFrame()
         Ks = np.linspace(0.8, 1.2, 101)*S1
         df['Ks'] = Ks
