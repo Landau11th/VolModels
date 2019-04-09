@@ -12,7 +12,7 @@ import numpy as np
 def PlotFunc3D( func:types.FunctionType, 
                xmin=0., xmax=1., xn=101, 
                ymin=0., ymax=1., yn=101,
-               labels=["","",""]):
+               labels=["","",""], savename=None):
     #lib for plotting
     import matplotlib.pyplot as plt
     from matplotlib import cm
@@ -37,7 +37,10 @@ def PlotFunc3D( func:types.FunctionType,
                            linewidth=0, antialiased=False)
     # Add a color bar which maps values to colors.
     fig.colorbar(surf, shrink=0.5, aspect=5)
-    plt.show()
+    if savename is None:
+        plt.show()
+    else:
+        plt.savefig(savename+'.jpg', dpi=400)
     pass
 
 ATM_VOL = 0.25
@@ -90,7 +93,9 @@ if __name__ == "__main__":
     def vol2(K,T):
         return vol(T,K)
     
-    PlotFunc3D( vol2, xmin=.8, xmax=1.2, ymin=0.001, ymax=5., labels=["K/S", "time to maturity", "vol"] )
+    PlotFunc3D( vol2, xmin=.8, xmax=1.2, ymin=0.001, ymax=5., 
+               labels=["K/S", "time to maturity", "implied vol"],
+               savename="implied vol")
     
     
     
@@ -119,7 +124,8 @@ if __name__ == "__main__":
         return local_vol(T,K,call_price,S,r)
     
     PlotFunc3D( partial( local_vol2, call_price=C_surface, S=10., r=interest ), 
-               xmin=8., xmax=12., ymin=0.02, ymax=5, labels=["S", "t", "local vol"] )
+               xmin=8., xmax=12., ymin=0.02, ymax=5, labels=["S", "t", "local vol"],
+               savename="local vol")
     
     
     import local_vol as lv
@@ -129,8 +135,8 @@ if __name__ == "__main__":
     S0 = 10.
     K = 11.
     T = 1.
-    N_T = 5000
-    N =160000
+    N_T = 1000#5000
+    N = 160000#160000
     
     
     def forward_vol( T1, S1, Ks, T ):
@@ -153,15 +159,16 @@ if __name__ == "__main__":
     
     import pandas as pd
 
-    for S1 in [8.,9.,10.,11.,12.]:    
+    for S1 in []:#[8.,9.,10.,11.,12.]:    
         df = pd.DataFrame()
         Ks = np.linspace(0.8, 1.2, 101)*S1
         df['Ks'] = Ks
         for i in range(7):
             T1 = 0.1*i
-            Tf = T1+1.
-            calls = forward_vol( T1, S1, Ks, T=Tf-T1 )
-            implied_vols = [BS_call_implied_vol(S=S1, K=k, T=Tf-T1, r=interest, C=c) for k, c in zip(Ks, calls) ]
+            duration = 1.
+            Tf = T1 + duration
+            calls = forward_vol( T1, S1, Ks, T=duration )
+            implied_vols = [BS_call_implied_vol(S=S1, K=k, T=duration, r=interest, C=c) for k, c in zip(Ks, calls) ]
             df['T1='+str(T1)] = implied_vols.copy()
             print(T1, ' finishes')
     #        dir_imp_vols = [vol(Tf, k/S1 ) for k in Ks]
